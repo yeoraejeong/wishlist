@@ -108,6 +108,10 @@ body{font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Ari
         transform:translateX(-100%);
       }
       #wrap{ grid-template-columns: 1fr !important; }
+
+      :root{ --card-w:144px; --gap:14px; }
+      #content{ min-width: calc(var(--card-w) * 3 + var(--gap) * 2 + 8px); }
+      .card-container{ gap:14px; padding:0 4px; }
     }
     .sidebar-toggle {
       display: none;
