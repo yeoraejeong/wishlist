@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>wishlist — minimal</title>
+  <style>
+    :root{--gap:28px;--border:1px solid #e5e7eb;--panel:#fff;--muted:#9ca3af;--card-w:160px}
+    *{box-sizing:border-box;margin:0;padding:0}
+body{font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Arial, sans-serif;background:#f6f7f9;color:#111; padding:20px}
+    a{text-decoration:none;color:inherit}
+
+    #wrap{
+      max-width:95%;
+      margin:24px auto;
+      display:grid;
+      grid-template-columns:22% 1fr;
+      gap:var(--gap)
+    }
+    /* when sidebar is hidden, use full-width content */
+    
+    #side{
+      position:sticky;
+      top:16px;
+      height:fit-content;
+      background:var(--panel);
+      border:var(--border);
+      border-radius:12px;
+      padding:16px;
+    }
+    #content{
+      min-height:200px;
+      min-width: calc(var(--card-w) * 3 + var(--gap) * 2 + 16px);
+      margin-top:-10px;
+    } 
+
+    /* profile (left) */
+    .profile{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .profile img{width:56px;height:56px;border-radius:10px;object-fit:cover;border:var(--border)}
+    .profile .title{font-weight:700}
+
+    /* sidebar categories */
+    .c_head{font-weight:700;margin:12px 0}
+    #sidebar-menu{list-style:none}
+    #sidebar-menu li{margin:6px 0}
+    #sidebar-menu a{display:flex;justify-content:space-between;padding:8px 10px;border:var(--border);border-radius:10px;background:var(--panel)}
+    #sidebar-menu .c_cnt{color:#6b7280;margin-left:8px}
+
+    .location{display:flex;align-items:center;gap:8px;margin:6px 10px 12px;font-weight:700}
+    .location .sep{color:#9ca3af}
+    #sidebar-menu a.active{border-color:#2563eb; box-shadow:0 0 0 1px rgba(37,99,235,.2) inset;}
+
+    /* cards */
+    .card-container{
+      display:grid;
+      grid-template-columns:repeat(3, var(--card-w)); /* 항상 3열, 고정 카드 폭 */
+      gap:20px;               /* 여백 살짝 줄임 */
+      padding:0 10px;         /* 상단 패딩 제거 유지 */
+      justify-content:flex-start;  /* 타이틀 아래 왼쪽 정렬 시작 */
+      justify-items:start;         /* 각 셀도 왼쪽 정렬 */
+    }
+    .list_c{background:var(--panel);border:var(--border);border-radius:12px;padding:8px}
+    .thumb_i{
+      width:var(--card-w);
+      aspect-ratio:3 / 4;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .thumb_i img{
+      width:100%;
+      height:100%;
+      aspect-ratio:3 / 4;
+      object-fit:contain;
+      display:block;
+    }
+    .thumb_i.noimg{background:#e5e7eb;color:var(--muted);font-size:12px;font-weight:600}
+
+    .sidebar {
+      width: 220px;
+      transition: transform 0.3s ease;
+    }
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+    /* overlay (popup backdrop) */
+    .overlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.45);
+      opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:1000;
+    }
+    .overlay.active{ opacity:1; pointer-events:auto; }
+    @media (max-width: 768px) {
+      /* keep 3 columns on mobile; no override for .card-container */
+      .sidebar{
+        position:fixed; top:0; left:0; bottom:0;
+        width:80vw; max-width:320px; background:#fff; z-index:1001;
+        transform:translateX(-100%);
+        box-shadow:0 10px 30px rgba(0,0,0,.25);
+        display:none; /* 기본은 숨김: 레이아웃 공간 차지 X */
+      }
+      .sidebar:not(.hidden){
+        display:block;            /* 열릴 때만 보이기 */
+        transform:translateX(0);  /* 화면 안으로 슬라이드 */
+      }
+      .sidebar.hidden{
+        display:none;             /* 닫히면 완전히 제거 (공간 차지 X) */
+        transform:translateX(-100%);
+      }
+      #wrap{ grid-template-columns: 1fr !important; }
+    }
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1100;
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .sidebar-toggle {
+        display: block;
+      }
+    }
+    @media (max-width: 860px){
+      #wrap{grid-template-columns:28% 1fr;}
+      #side{min-width:150px;}
+    }
+    @media (max-width: 1024px){
+      /* removed card columns override */
+    }
+    @media (max-width: 600px){
+      /* removed card columns override */
+    }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <aside id="side" class="sidebar">
+      <div class="profile">
+        <img id="profile-photo" alt="profile" />
+        <div>
+          <div class="title">wishlist</div>
+          <div class="muted" style="color:#6b7280;font-size:13px">favor(55778)</div>
+        </div>
+      </div>
+      <div class="c_head">분류</div>
+      <ul id="sidebar-menu"></ul>
+    </aside>
+
+    <main id="content">
+      <div id="location" class="location">
+        <span id="loc-cat">분류 전체보기</span>
+        <span id="loc-sep" class="sep" style="display:none;">›</span>
+        <span id="loc-theme"></span>
+      </div>
+      <div id="sheet_cards" class="card-container"></div>
+    </main>
+  </div>
+  <div id="overlay" class="overlay"></div>
+
+  <!-- libs -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+  // ===== config =====
+  const SHEET_ID   = '1-9u4h8tHsOEQUTMsO2jKl3k-apeiyALdX4wpd0eYJKo';
+  const SHEET_TAB  = '위시리스트';
+  const SHEET_URL  = `https://opensheet.elk.sh/${SHEET_ID}/${encodeURIComponent(SHEET_TAB)}`;
+  const SUPABASE_URL  = 'https://aetktrjblniikvgcjlyd.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFldGt0cmpibG5paWt2Z2NqbHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTU0NTAsImV4cCI6MjA3MDkzMTQ1MH0.eXvuNEV8JQwcWGTBviPrTZYHiegLABkKQOBnMsA9kd0';
+  const BUCKET = 'items';
+
+  // ===== supabase =====
+  let sb = null;
+  try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON); }catch(e){ console.error('supabase init fail', e); }
+  const findImageUrlByCode = (code) => {
+    if(!sb||!code) return '';
+    const { data } = sb.storage.from(BUCKET).getPublicUrl(code);
+    return data?.publicUrl || '';
+  };
+  async function loadProfile(){
+    if(!sb) return;
+    const { data } = sb.storage.from(BUCKET).getPublicUrl('profile.png');
+    if(data?.publicUrl) document.getElementById('profile-photo').src = data.publicUrl;
+  }
+
+  // ===== render =====
+  const $cards = document.getElementById('sheet_cards');
+  const $menu  = document.getElementById('sidebar-menu');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('overlay');
+
+  let ALL_ITEMS = [];
+  let CURRENT_CAT = '분류 전체보기';
+  let CURRENT_THEME = '';
+
+  function updateTitle(cat, theme){
+    const catEl = document.getElementById('loc-cat');
+    const themeEl = document.getElementById('loc-theme');
+    const sepEl = document.getElementById('loc-sep');
+    catEl.textContent = cat || '분류 전체보기';
+    if (theme){
+      themeEl.textContent = theme; sepEl.style.display = '';
+    } else {
+      themeEl.textContent = ''; sepEl.style.display = 'none';
+    }
+  }
+
+  function renderCards(items){
+    $cards.innerHTML = items.map(cardHTML).join('');
+  }
+
+  // === mobile popup sidebar ===
+  function openSidebar(){
+    sidebar.classList.remove('hidden');
+    overlay.classList.add('active');
+  }
+  function closeSidebar(){
+    sidebar.classList.add('hidden');
+    overlay.classList.remove('active');
+  }
+  function toggleSidebar(){
+    const willHide = !sidebar.classList.contains('hidden');
+    if (willHide) { closeSidebar(); } else { openSidebar(); }
+  }
+  function settleSidebar(){
+    if (window.innerWidth <= 768){
+      // mobile: keep sidebar as drawer (hidden by default), content stays full-width
+      sidebar.classList.add('hidden');
+      overlay.classList.remove('active');
+    } else {
+      // desktop: sidebar visible, no overlay
+      sidebar.classList.remove('hidden');
+      overlay.classList.remove('active');
+    }
+  }
+  overlay.addEventListener('click', closeSidebar);
+  window.addEventListener('resize', settleSidebar);
+  settleSidebar();
+
+  const cardHTML = (item) => {
+    const url = (item['사진']||'').toString();
+    return url
+      ? `<div class="list_c"><div class="thumb_i"><img src="${url}" alt="${item['이름']||''}"></div></div>`
+      : `<div class="list_c"><div class="thumb_i noimg">NO IMAGE</div></div>`;
+  };
+
+  function render(items){
+    ALL_ITEMS = items.slice();
+    renderCards(items);
+
+    // sidebar (분류: 테마 분류 → 테마명)
+    const grouped = {};
+    items.forEach(it=>{
+      const cat = it['테마 분류']||'기타';
+      const nm  = it['테마명']||'기타';
+      if(!grouped[cat]) grouped[cat] = {};
+      grouped[cat][nm] = (grouped[cat][nm]||0)+1;
+    });
+
+    let html = '';
+    // 전체보기
+    html += `<li><a href="#" data-cat="__ALL__"><span>분류 전체보기</span><span class="c_cnt">(${items.length})</span></a></li>`;
+    // 카테고리/테마
+    Object.entries(grouped).sort().forEach(([cat,themes])=>{
+      const subs = Object.entries(themes).sort().map(([nm,cnt])=>
+        `<li><a href="#" data-cat="${cat}" data-theme="${nm}"><span>${nm}</span><span class="c_cnt">(${cnt})</span></a></li>`
+      ).join('');
+      html += `<li><div class="c_head">${cat}</div><ul>${subs}</ul></li>`;
+    });
+    $menu.innerHTML = html;
+
+    // 클릭 위임
+    $menu.addEventListener('click', function(e){
+      const a = e.target.closest('a');
+      if(!a) return;
+      e.preventDefault();
+
+      // active 표시 초기화
+      $menu.querySelectorAll('a.active').forEach(el=>el.classList.remove('active'));
+      a.classList.add('active');
+
+      const cat = a.dataset.cat;
+      const theme = a.dataset.theme || '';
+
+      if(cat === '__ALL__'){
+        CURRENT_CAT = '분류 전체보기';
+        CURRENT_THEME = '';
+        renderCards(ALL_ITEMS);
+        updateTitle(CURRENT_CAT, '');
+        // 모바일에서 사이드바 닫기
+        if(window.innerWidth <= 768) closeSidebar();
+        return;
+      }
+
+      CURRENT_CAT = cat; CURRENT_THEME = theme;
+      const filtered = ALL_ITEMS.filter(it => (it['테마 분류']||'기타') === cat && (!theme || (it['테마명']||'기타') === theme));
+      renderCards(filtered);
+      updateTitle(cat, theme);
+      if(window.innerWidth <= 768) closeSidebar();
+    }, { once: true });
+
+    // 초기 타이틀
+    updateTitle('분류 전체보기', '');
+  }
+
+  // ===== load =====
+  async function load(){
+    try{
+      const res = await fetch(SHEET_URL, { cache: 'no-store' });
+      const rows = await res.json(); // headers 그대로: 테마 분류, 테마명, 출시일, 마감일, 아이템 분류, 등급, 이름, 코드(.png)
+
+      // 코드(.png) → Supabase public URL로 채우기
+      const done = rows.map(r=>{
+        const code = (r['코드']||'').toString().trim();
+        r['사진'] = code ? findImageUrlByCode(code) : '';
+        return r;
+      });
+      render(done);
+      loadProfile();
+    }catch(e){
+      console.error('load fail', e);
+      $cards.innerHTML = '<div style="color:#6b7280">불러오기 실패</div>';
+    }
+  }
+
+  load();
+  </script>
+</body>
+</html>
