@@ -300,7 +300,6 @@ body{font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Ari
         CURRENT_THEME = '';
         renderCards(ALL_ITEMS);
         updateTitle(CURRENT_CAT, '');
-        // 모바일에서 사이드바 닫기
         if(window.innerWidth <= 768) closeSidebar();
         return;
       }
@@ -310,7 +309,7 @@ body{font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Ari
       renderCards(filtered);
       updateTitle(cat, theme);
       if(window.innerWidth <= 768) closeSidebar();
-    }, { once: true });
+    });
 
     // 초기 타이틀
     updateTitle('분류 전체보기', '');
